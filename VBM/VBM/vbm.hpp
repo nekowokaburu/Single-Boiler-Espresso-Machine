@@ -1,14 +1,16 @@
 #ifndef __VBM_HPP
 #define __VBM_HPP
 
+#include "button.hpp"
+#include "buttonBrew.hpp"
 #include "heater.hpp"
 #include "led.hpp"
-#include "button.hpp"
 
+// TODO: This class could be created with the pins used
 // Handles the machine states and the pump, combines heater, led and button
 class VBM
 {
-public:
+  public:
     enum class State
     {
         Error = -1,
@@ -28,7 +30,8 @@ public:
     // Updates the espressomachine's state and hanles the machine's functions
     void Update() noexcept;
 
-private:
+
+  private:
     // Helper for debug state
     String StateToString() const noexcept;
 
@@ -39,14 +42,19 @@ private:
     // Toggles the pump on/off
     void TogglePump() noexcept;
 
-    Heater *heater_;
-    LED *led_;
-    Button *button_;
+    // Turn pump off and set members correctly
+    void TurnPumpOff() noexcept;
+
+    Heater* heater_;
+    LED* led_;
+    Button* button_;
+    ButtonBrew* buttonBrew_;
 
     State machineState_;
     unsigned long currentTime_;
 
     bool pumpOn_;
+    bool wasBrewing_;
 };
 
 #endif

@@ -28,20 +28,15 @@ public:
         AutoPID::run();
 
         // set relay state
-        // if ((millis() - _lastPulseTime) > _windowSize)
-        //     _lastPulseTime += _windowSize;
-
-        LOG_HEATER("update window time")
+        // LOG_HEATER("update window time")
         const unsigned long currentTime = millis();
 
-        // while ((currentTime - _lastPulseTime) > _windowSize)
         while (currentTime > (_windowSize + _lastPulseTime))
         {
             _lastPulseTime += _windowSize;
-            // LOG_HEATER(String(currentTime) + " - " + _lastPulseTime + " > " + _windowSize)
-            LOG_HEATER(String(currentTime) + " > " + _lastPulseTime + " + " + _windowSize)
+            // LOG_HEATER(String(currentTime) + " > " + _lastPulseTime + " + " + _windowSize)
         }
-        LOG_HEATER("update relay state")
+        // LOG_HEATER("update relay state")
         *_relayState = ((millis() - _lastPulseTime) < (_output * _windowSize));
     }
 

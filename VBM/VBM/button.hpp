@@ -21,9 +21,8 @@ public:
         : registeredButtonCommand_{Command::Nothing}, alreadyTriggered_{false}, timeButtonPressed_{0}, timeButtonReleased_{0}, buttonCommandWasProcessed_{true}, startupDelay_{1000}
 
     {
-        pinMode(BUTTON_PIN, INPUT_PULLUP);
-        digitalRead(BUTTON_PIN);
-        attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), Button::InterruptButton, CHANGE);
+        pinMode(BUTTON_PIN_SWITCH, INPUT_PULLUP);
+        // attachInterrupt(digitalPinToInterrupt(BUTTON_PIN_SWITCH), Button::InterruptButton, CHANGE);
     }
 
     void Update() noexcept;
@@ -31,24 +30,27 @@ public:
     Command RegisteredButtonPress() noexcept;
 
 private:
-    static void InterruptButton()
-    {
-        const auto fallingIfLow = digitalRead(BUTTON_PIN);
-        if (fallingIfLow == LOW || !interruptButtonPressed_)
-        {
-            interruptButtonPressed_ = true;
-            interruptButtonReleased_ = false;
-            // LOG_BUTTON(String("XXXXXXXXXXXXXXXXXXXXXXXXXX == ") + fallingIfLow)
-        }
-        else
-        {
-            // interruptButtonPressed_ = false;
-            interruptButtonReleased_ = true;
-            // LOG_BUTTON(String("YYYYYYYYYYYYYYYYYYYYYYYYYY == ") + fallingIfLow)
-        }
-    }
+    // static void InterruptButton()
+    // {
+    //     const auto fallingIfLow = digitalRead(BUTTON_PIN_SWITCH);
+    //     if (fallingIfLow == LOW || !interruptButtonPressed_)
+    //     {
+    //         interruptButtonPressed_ = true;
+    //         interruptButtonReleased_ = false;
+    //         // LOG_BUTTON_SWITCH(String("XXXXXXXXXXXXXXXXXXXXXXXXXX == ") + fallingIfLow)
+    //     }
+    //     else
+    //     {
+    //         // interruptButtonPressed_ = false;
+    //         interruptButtonReleased_ = true;
+    //         // LOG_BUTTON_SWITCH(String("YYYYYYYYYYYYYYYYYYYYYYYYYY == ") + fallingIfLow)
+    //     }
+    // }
 
     Command registeredButtonCommand_;
+
+    bool buttonWasPressed_ = false;
+
     static volatile bool interruptButtonPressed_;
     static volatile bool interruptButtonReleased_;
 

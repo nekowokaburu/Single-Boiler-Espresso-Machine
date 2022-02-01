@@ -1,16 +1,17 @@
-# Single-Boiler-Espresso-Machine
+# Single Boiler Espresso Machine
 
 Here you find a full implementation which runs a single boiler espresso machine such as a Vibiemme Domobar. You can run this code, if your machine has (or will have):
 - Single brew/steam boiler
 - Single button to operate the machine
 - Single LED to show the current machine state
-- If a lever switch starts the extraction, wire it directly to the pump, the pump can also be toggled by pushing the button once but this is rather to fill the boiler after steaming or run hot water through than to start the extraction, at least on a conventional machine
+- A lever switch starting the extraction (optional but convenient, present on all E61 groups)
 - I use a PT1000 thermocouple on the boiler with MAX31865
 
 This also uses a PID library to get better temperature stability. All I/O can be set in [settings.hpp](VBM/VBM/settings.hpp). There you'll also find some logging macros for debugging purpose which can be turned on or off.
 
 Future changes might include:
 + MPC on the heater
++ Time to turn the machine on and off and enable a sleep mode (depending on UTC rather than power-on-time)
 + Bluetooth communication with a fitting Android App
 
 ### Machine usage
@@ -35,3 +36,18 @@ The led has different blink patterns (see [LED::Signal](VBM/VBM/led.hpp)). The m
 - LED blinks very fast --> Machine ready to steam
 
 All other blink states indicate heating to brew, heating to steam, cooling from steam to brew or error state, you will figure that out as you go.
+
+
+-----
+# Untested stuff
+
+
+## Dual Boiler Espresso Machine
+The current PCB has support for up to:
+- Three thermocouples or other SPI devices
+- Two I2C devices, from which I suggest one to be used for a real-time-clock.
+- Three SSR outputs (actually more but three are intended for this), also with pwm
+- Fixed pwm output to suggestively a TIP120 for higher power devices like a 12 V motor
+- All remainng Arduino Nano analog and digital I/O
+
+With this, it should be able to update the code in this repository for use with a dual-boiler espresso machine or other machine types. Even running a roaster or any feedback loop device really. I currently have no dual boiler machine so I won't update for this but let me know how it goes ;)

@@ -37,17 +37,21 @@ The led has different blink patterns (see [LED::Signal](VBM/VBM/led.hpp)). The m
 
 All other blink states indicate heating to brew, heating to steam, cooling from steam to brew or error state, you will figure that out as you go.
 
-
------
-# Untested stuff
-
-
-## Dual Boiler Espresso Machine
+## PCB
 The current PCB has support for up to:
 - Three thermocouples or other SPI devices
 - Two I2C devices, from which I suggest one to be used for a real-time-clock.
 - Three SSR outputs (actually more but three are intended for this), also with pwm
 - Fixed pwm output to suggestively a TIP120 for higher power devices like a 12 V motor
 - All remainng Arduino Nano analog and digital I/O
+<p align="center">
+<img src="PCB/2D.JPG" width="400">
+</p>
 
-With this, it should be able to update the code in this repository for use with a dual-boiler espresso machine or other machine types. Even running a roaster or any feedback loop device really. I currently have no dual boiler machine so I won't update for this but let me know how it goes ;)
+
+-------------------------------------------------------------------------------------------------
+# Untested stuff
+
+
+## Dual Boiler Espresso Machine
+With the current PCB, it should be easily possible to update the code in this repository for use with a dual-boiler espresso machine or other machine types. Even running a roaster or any feedback loop device really. I currently have no dual boiler machine so I won't update for this but let me know how it goes ;)

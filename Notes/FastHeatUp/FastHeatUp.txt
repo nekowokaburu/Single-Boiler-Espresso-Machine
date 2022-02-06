@@ -1,5 +1,6 @@
 FastHeatUp: Starting on steam temp and then switching to brew after a while.
 
+------------------------------------- 01 ------------------------------------
 - Steam temp: 120 °C
 - Brew temp 100 °C
 
@@ -7,6 +8,8 @@ FastHeatUp: Starting on steam temp and then switching to brew after a while.
 - KI = 0;
 - KD = 0.3;
 - WINDOW_SIZE = 50;
+
+-----------------------------------------------------------------------------
 
 Temperature constantly about 1.5 °C below setpoints
 A steam temp of abprox. 10 min and then switch to brew temp and wait for approx. 10 min seems to resut in a well heated machine ready fro brew already (going by feel on the E61). For non-bottompless PFs, maybe run some water through before actual first brew.

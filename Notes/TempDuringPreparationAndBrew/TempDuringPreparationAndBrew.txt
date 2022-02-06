@@ -1,0 +1,16 @@
+TempDuringPreparationAndBrew: Temperature variations when flushing water for cup preheat and group clean, also running some extractions to see the heater reaction to the cold water feed.
+
+--------------------------------------- 01 ---------------------------------------
+- Steam temp: 120 °C
+- Brew temp 100 °C
+
+- KP = 0.05;
+- KI = 0;
+- KD = 0.3;
+- WINDOW_SIZE = 50;
+
+----------------------------------------------------------------------------------
+
+Temperature constantly about 1.5 °C below setpoints
+
+Temperature overshoots like crazy, rather have no raction during brew at all or a milder one. Brew/flush can be detected by the button push!

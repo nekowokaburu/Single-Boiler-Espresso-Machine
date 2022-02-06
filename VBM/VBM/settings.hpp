@@ -8,7 +8,7 @@
 #define DEBUG_COMM 0
 #define DEBUG_BUTTON_SWITCH 0
 #define DEBUG_BUTTON_BREW 0
-#define DEBUG_HEATER 0
+#define DEBUG_HEATER 1
 #define DEBUG_LED 0
 #define DEBUG_VBM 0
 
@@ -70,9 +70,9 @@ constexpr const int LED_PIN = 8;
 
 #pragma region user variables
 
-const constexpr double SETPOINT_BREW_TEMP = 98.5;
-const constexpr double SETPOINT_STEAM_TEMP = 120.0;
-const constexpr double MAX_TEMP = 122.0;  // max allowed temp on PID computation
+const constexpr double SETPOINT_BREW_TEMP = 100.0;
+const constexpr double SETPOINT_STEAM_TEMP = 130.0;
+const constexpr double MAX_TEMP = 135.0;  // max allowed temp on PID computation
 
 // PID ******************************************************************************
 // best precision: +-0.5 degree: 0.1, 0, 800, oscillates by +-0.5degree

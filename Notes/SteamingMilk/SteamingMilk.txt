@@ -1,0 +1,15 @@
+SteamingMilk: Turn to steam mode, wait untill temp. reaches, start steaming.
+
+------------------------------------- 01 ------------------------------------
+- Steam temp: 120 °C --> 130; 120 is way too low!
+- Brew temp 100 °C
+
+- KP = 0.05;
+- KI = 0;
+- KD = 0.3;
+- WINDOW_SIZE = 50;
+
+-----------------------------------------------------------------------------
+
+Steaming at 120 is way too low, higher temp semms better, still some power loss during steaming, maybe go even hight (VBM was at around 135 °C).
+Temperature overshoot was rediculous on warm machine!

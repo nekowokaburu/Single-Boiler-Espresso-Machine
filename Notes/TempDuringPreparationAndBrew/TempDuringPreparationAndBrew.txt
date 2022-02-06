@@ -1,5 +1,7 @@
 TempDuringPreparationAndBrew: Temperature variations when flushing water for cup preheat and group clean, also running some extractions to see the heater reaction to the cold water feed.
 
+Note: Heating up on an already warm machine after 1-2 h off time overshoots drasticially!
+
 --------------------------------------- 01 ---------------------------------------
 - Steam temp: 120 °C
 - Brew temp 100 °C

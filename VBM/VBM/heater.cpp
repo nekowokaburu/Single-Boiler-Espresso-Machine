@@ -1,7 +1,13 @@
 #include "heater.hpp"
 
 Heater::Heater()
-    : heaterState_{State::Off}, currentTemperature_{0}, thermocouple_(new Adafruit_MAX31865(BOILER_TEMP_CS_PIN)), relayState_(false), windowStartTime_{millis()}, setpoint_{0}
+    : isReady_{false},
+      heaterState_{State::Off},
+      currentTemperature_{0},
+      thermocouple_(new Adafruit_MAX31865(BOILER_TEMP_CS_PIN)),
+      relayState_(false),
+      windowStartTime_{millis()},
+      setpoint_{0}
 {
     pinMode(BOILER_SSR_PIN, OUTPUT);
     digitalWrite(BOILER_SSR_PIN, LOW);
@@ -21,29 +27,38 @@ Heater::~Heater()
 
 void Heater::SetHeaterTo(State HeaterState) noexcept
 {
+    // On state change, set to not ready
+    if (heaterState_ != HeaterState)
+        isReady_ = false;
+
     heaterState_ = HeaterState;
     switch (heaterState_)
     {
-    case State::BrewTemp:
-        setpoint_ = SETPOINT_BREW_TEMP;
-        break;
+        case State::BrewTemp:
+            setpoint_ = SETPOINT_BREW_TEMP;
+            break;
 
-    case State::SteamTemp:
-        setpoint_ = SETPOINT_STEAM_TEMP;
-        break;
-    default:
-    case State::Off:
-        setpoint_ = 0;
-        break;
+        case State::SteamTemp:
+            setpoint_ = SETPOINT_STEAM_TEMP;
+            break;
+        default:
+        case State::Off:
+            setpoint_ = 0;
+            break;
     }
     LOG_HEATER(String("SetHeaterTo: ") + static_cast<int>(heaterState_) + " with setpoint: " + setpoint_)
 }
 
-bool Heater::IsReady() const noexcept
+bool Heater::IsReady() noexcept
 {
-    auto const isReady = ((setpoint_ - IS_READY_RANGE) < currentTemperature_) && ((setpoint_ + IS_READY_RANGE) > currentTemperature_) ? true : false;
-    LOG_HEATER(String(">IsReady") + isReady)
-    return isReady;
+    // Set isReady once for each stage
+    if (!isReady_)
+        isReady_ =
+            ((setpoint_ - IS_READY_RANGE) < currentTemperature_) && ((setpoint_ + IS_READY_RANGE) > currentTemperature_)
+                ? true
+                : false;
+    LOG_HEATER(String(">IsReady") + isReady_)
+    return isReady_;
 }
 
 void Heater::UpdateTemperature()
@@ -58,8 +73,7 @@ void Heater::Boiler(void)
     // For now I duplicated this code as the relayState_ will be switched from AutoPIDRelay
     if (heaterState_ == State::Off)
     {
-        if (!DISABLE_HEATER)
-            digitalWrite(BOILER_SSR_PIN, LOW);
+        digitalWrite(BOILER_SSR_PIN, LOW);
         LOG_HEATER(String(">heater_ssr:0"));
     }
     else

@@ -3,8 +3,11 @@
 
 #include "button.hpp"
 #include "buttonBrew.hpp"
+#include "communicator.hpp"
+#include "eepromMemory.hpp"
 #include "heater.hpp"
 #include "led.hpp"
+#include "clock.hpp"
 
 // TODO: This class could be created with the pins used
 // Handles the machine states and the pump, combines heater, led and button
@@ -30,14 +33,17 @@ class VBM
     // Updates the espressomachine's state and hanles the machine's functions
     void Update() noexcept;
 
-
   private:
     // Helper for debug state
     String StateToString() const noexcept;
 
     void HandleButton(Button::Command ButtonCommand) noexcept;
+
     // update the led status to be displayed based on the current machine state
     void HandleLED() noexcept;
+
+    // update and handle communication I/O
+    void HandleCommunication(enum Communicator::Command Command) noexcept;
 
     // Toggles the pump on/off
     void TogglePump() noexcept;
@@ -49,6 +55,9 @@ class VBM
     LED* led_;
     Button* button_;
     ButtonBrew* buttonBrew_;
+    Communicator* communicator_;
+    Eeprom* eeprom_;
+    Clock* clock_;
 
     State machineState_;
     unsigned long currentTime_;

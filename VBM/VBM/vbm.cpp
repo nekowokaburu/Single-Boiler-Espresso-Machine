@@ -5,7 +5,10 @@ VBM::VBM()
       led_(new LED()),
       button_(new Button()),
       buttonBrew_(new ButtonBrew()),
+      communicator_(new Communicator()),
       machineState_{State::Off},
+      eeprom_{new Eeprom()},
+      clock_{new Clock()},
       currentTime_{0},
       pumpOn_{false},
       wasBrewing_{false}
@@ -17,6 +20,17 @@ VBM::VBM()
         Serial.println(
             "WARNING: Heater disabled, code will run normally but machine will not heat up! Set DISABLE_HEATER to "
             "false for normal use!");
+
+#ifdef INITIALIZE_EEPROM
+    eeprom_->Save(Eeprom::Parameter::SetpointBrew, SETPOINT_BREW_TEMP);
+    eeprom_->Save(Eeprom::Parameter::SetpointSteam, SETPOINT_STEAM_TEMP);
+#endif
+
+    // Load eeprom parameters with user set parameters as fallback if desired, for debugging sometimes not so smart
+#if LOAD_INITIAL_PARAMETERS_FROM_EEPROM
+    eeprom_->Load(Eeprom::Parameter::SetpointBrew, SETPOINT_BREW_TEMP);
+    eeprom_->Load(Eeprom::Parameter::SetpointSteam, SETPOINT_STEAM_TEMP);
+#endif
 }
 
 VBM::~VBM()
@@ -25,6 +39,9 @@ VBM::~VBM()
     delete led_;
     delete button_;
     delete buttonBrew_;
+    delete communicator_;
+    delete eeprom_;
+    delete clock_;
 }
 
 String VBM::StateToString() const noexcept
@@ -58,6 +75,30 @@ void VBM::Update() noexcept
 {
     // call millis once for a repurposed current time
     currentTime_ = millis();
+
+    // Update communication input
+    communicator_->Update();
+    HandleCommunication(communicator_->Command());
+
+    // Update timer dependent machine state
+    clock_->Update();
+    if (clock_->HasNewState())
+    {
+        if (clock_->State() == Clock::State::Off)
+        {
+            machineState_ = State::Off;
+            LOG_VBM("VBM Timer turn machine off")
+        }
+        else if (clock_->State() == Clock::State::On)
+        {
+            LOG_VBM("VBM Timer turn machine on")
+            if (machineState_ == State::Off || machineState_ == State::Sleep)
+            {
+                heater_->SetHeaterTo(Heater::State::BrewTemp);
+                machineState_ = State::HeatingUpBrew;
+            }
+        }
+    }
 
     // Brew lever state changed
     const bool isBrewing = buttonBrew_->IsPressed();
@@ -96,7 +137,7 @@ void VBM::HandleButton(Button::Command ButtonCommand) noexcept
         case Button::Command::Nothing:
             // This does nothing for us
             break;
-        case Button::Command::Click:
+        case Button::Command::Click: {
             if (machineState_ == State::Off || machineState_ == State::Sleep)
             {
                 heater_->SetHeaterTo(Heater::State::BrewTemp);
@@ -104,8 +145,9 @@ void VBM::HandleButton(Button::Command ButtonCommand) noexcept
             }
             else
                 TogglePump();
-            break;
-        case Button::Command::ShortPress:
+        }
+        break;
+        case Button::Command::ShortPress: {
             if (machineState_ == State::Off)
             {
                 heater_->SetHeaterTo(Heater::State::BrewTemp);
@@ -124,12 +166,13 @@ void VBM::HandleButton(Button::Command ButtonCommand) noexcept
             }
             else
             {
-                heater_->SetHeaterTo(Heater::State::Off);
-                machineState_ = State::Error;
                 LOG_VBM(String("Unkown machine state from button: ") + static_cast<int>(ButtonCommand) +
                         " with current state: " + static_cast<int>(machineState_))
+                heater_->SetHeaterTo(Heater::State::Off);
+                machineState_ = State::Error;
             }
-            break;
+        }
+        break;
         case Button::Command::LongPress: {
             heater_->SetHeaterTo(Heater::State::Off);
             TurnPumpOff();
@@ -138,10 +181,11 @@ void VBM::HandleButton(Button::Command ButtonCommand) noexcept
         break;
 
         case Button::Command::Error:
-        default:
+        default: {
             heater_->SetHeaterTo(Heater::State::Off);
             machineState_ = State::Error;
-            break;
+        }
+        break;
     }
 }
 
@@ -174,6 +218,75 @@ void VBM::HandleLED() noexcept
         case State::Error:
             led_->ShowStatus(LED::Signal::Gallop);
             break;
+    }
+}
+
+void VBM::HandleCommunication(enum Communicator::Command Command) noexcept
+{
+    switch (Command)
+    {
+        case Communicator::Command::TurnOn: {
+            LOG_VBM(String("communication: TurnOn"))
+            heater_->SetHeaterTo(Heater::State::BrewTemp);
+            machineState_ = State::HeatingUpBrew;
+        }
+        break;
+        case Communicator::Command::TurnOff: {
+            LOG_VBM(String("communication: TurnOff"))
+            heater_->SetHeaterTo(Heater::State::Off);
+            machineState_ = State::Off;
+        }
+        break;
+        case Communicator::Command::UpdateSetpointBrew: {
+            const auto newSetpointBrew = communicator_->Value();
+            LOG_VBM(String("communication: UpdateSetpointBrew:") + newSetpointBrew)
+            SETPOINT_BREW_TEMP = newSetpointBrew;
+            // Save the new setpoint to the eeprom, cast to be excactly clear what type we want!
+            eeprom_->Save(Eeprom::Parameter::SetpointBrew, static_cast<float>(newSetpointBrew));
+        }
+        break;
+        case Communicator::Command::UpdateSetpointSteam: {
+            const auto newSetpointSteam = communicator_->Value();
+            LOG_VBM(String("communication: UpdateSetpointSteam:") + newSetpointSteam)
+            SETPOINT_STEAM_TEMP = newSetpointSteam;
+            // Save the new setpoint to the eeprom, cast to be excactly clear what type we want!
+            eeprom_->Save(Eeprom::Parameter::SetpointBrew, static_cast<float>(newSetpointSteam));
+        }
+        break;
+        case Communicator::Command::DurationTimer: {
+            const auto durationInMin = communicator_->Value();
+            LOG_VBM(String("communication: Turn machine off in ") + durationInMin + " s")
+            clock_->TurnOffIn(durationInMin * 60);
+        }
+        break;
+        case Communicator::Command::DaysTimer1: {
+            const uint8_t daysTimer1 = communicator_->Value();
+            LOG_VBM(String("communication: Set days to ") + daysTimer1)
+            clock_->SetDays(daysTimer1);
+        }
+        break;
+        case Communicator::Command::Timer1On: {
+            const auto timeFromMidnightInMinOn = communicator_->Value();
+            LOG_VBM(String("communication: Turn machine on at ") +
+                    static_cast<int>((timeFromMidnightInMinOn - static_cast<int>(timeFromMidnightInMinOn) % 60) / 60) +
+                    ":" + static_cast<int>(timeFromMidnightInMinOn) % 60)
+            clock_->TurnOnAt(timeFromMidnightInMinOn);
+        }
+        break;
+        case Communicator::Command::Timer1Off: {
+            const auto timeFromMidnightInMinOff = communicator_->Value();
+            LOG_VBM(
+                String("communication: Turn machine off at ") +
+                static_cast<int>((timeFromMidnightInMinOff - static_cast<int>(timeFromMidnightInMinOff) % 60) / 60) +
+                ":" + static_cast<int>(timeFromMidnightInMinOff) % 60)
+            clock_->TurnOffAt(timeFromMidnightInMinOff);
+        }
+        break;
+        default: {
+            // Don't call the log heler as it would break the loop
+            // Serial.println(String("HandleCommunication - not implemented command: ") + static_cast<int>(Command));
+        }
+        break;
     }
 }
 

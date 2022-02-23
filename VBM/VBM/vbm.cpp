@@ -86,8 +86,8 @@ void VBM::Update() noexcept
     {
         if (clock_->State() == Clock::State::Off)
         {
-            machineState_ = State::Off;
             LOG_VBM("VBM Timer turn machine off")
+            machineState_ = State::Off;
         }
         else if (clock_->State() == Clock::State::On)
         {
@@ -255,7 +255,7 @@ void VBM::HandleCommunication(enum Communicator::Command Command) noexcept
         break;
         case Communicator::Command::DurationTimer: {
             const auto durationInMin = communicator_->Value();
-            LOG_VBM(String("communication: Turn machine off in ") + durationInMin + " s")
+            LOG_VBM(String("communication: Turn machine off in ") + durationInMin * 60 + " s")
             clock_->TurnOffIn(durationInMin * 60);
         }
         break;

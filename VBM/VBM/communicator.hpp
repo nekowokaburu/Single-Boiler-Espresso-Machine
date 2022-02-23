@@ -33,6 +33,9 @@ class Communicator
     // Update loop checks for a new message and retrieves it completely in one go.
     void Update() noexcept;
 
+    // Send a message
+    void SendMessage(String Message) const noexcept;
+
   private:
     // TODO: try catch this for any errors and return success for setting command or not
     // Gets the value from a message after the ':' and casts to double

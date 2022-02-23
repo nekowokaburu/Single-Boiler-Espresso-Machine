@@ -60,34 +60,49 @@ class Clock final
         uint8_t weekday = rtc_->DayOfWeek();
 
         LOG_CLOCK(String("Clock update: Current: ") + dateTime.hour() + ":" + dateTime.minute() +
-                  " timer1On: " + GetHours(turnOnAt_) + ":" + GetMinutes(turnOnAt_))
+                  " timer1On: " + GetHours(turnOnAt_) + ":" + GetMinutes(turnOnAt_) +
+                  " -- unixtime >= duration: " + unixTime + ">=" + turnOffAfterDuration_)
 
         // First the on stages, then the off stages to overwrite on stage.
         // Assumption:
         // One can only turn the machine off after it was turned on.
         // It is not possible to turn a machine off and on later in the same day.
-        if ((weekday & days_) && GetHours(turnOnAt_) >= dateTime.hour() && GetMinutes(turnOnAt_) >= dateTime.minute())
+        if (state_ != State::On && (weekday & days_) && dateTime.hour() >= GetHours(turnOnAt_) &&
+            dateTime.minute() >= GetMinutes(turnOnAt_))
         {
+            LOG_CLOCK(String("Turn on at: ") + dateTime.hour() + ":" + dateTime.minute() +
+                      " >= " + GetHours(turnOnAt_) + ":" + GetMinutes(turnOnAt_))
             state_ = State::On;
-            LOG_CLOCK(String("Turn on at: ") + GetHours(turnOnAt_) + ":" + GetMinutes(turnOnAt_) +
-                      " >= " + dateTime.hour() + ":" + dateTime.minute())
+            hasNewState_ = true;
         }
 
-        if (turnOffAfterDuration_ != 0 && turnOffAfterDuration_ >= unixTime)
+        if (turnOffAfterDuration_ != 0 && unixTime >= turnOffAfterDuration_)
         {
-            state_ = State::Off;
-            turnOffAfterDuration_ = 0;
             LOG_CLOCK(String("Turn off after duration: ") + turnOffAfterDuration_ + " >= " + unixTime)
-        }
-        if ((weekday & days_) && GetHours(turnOffAt_) >= dateTime.hour() && GetMinutes(turnOffAt_) >= dateTime.minute())
-        {
+            turnOffAfterDuration_ = 0;
             state_ = State::Off;
-            LOG_CLOCK(String("Turn off at: ") + GetHours(turnOffAt_) + ":" + GetMinutes(turnOffAt_) +
-                      " >= " + dateTime.hour() + ":" + dateTime.minute())
+            hasNewState_ = true;
+        }
+        // If the machine should only turn on, turnOffAt_ is 0.
+        if (turnOffAt_ != 0 && state_ != State::Off && (weekday & days_) && dateTime.hour() >= GetHours(turnOffAt_) &&
+            dateTime.minute() >= GetMinutes(turnOffAt_))
+        {
+            // Check that off timer comes after the on timer, else ignore it
+            if (turnOffAt_ > turnOnAt_)
+            {
+                LOG_CLOCK(String("Turn off at: ") + dateTime.hour() + ":" + dateTime.minute() +
+                          " >= " + GetHours(turnOffAt_) + ":" + GetMinutes(turnOffAt_))
+                state_ = State::Off;
+                hasNewState_ = true;
+            }
+            else
+            {
+                LOG_CLOCK("Turn off time lies before turn on time and is therefore ignored")
+            }
         }
 
         // Check if a possibly triggered timer event is new
-        hasNewState_ = oldState != state_;
+        // hasNewState_ = oldState != state_;
     }
 
     void SetDays(const uint8_t Days)
@@ -96,16 +111,24 @@ class Clock final
         days_ = Days;
     }
 
-    // Duration in seconds to turn the machine off
+    // Duration in seconds to turn the machine off.
+    // Input changed to minutes in vbm.cpp; durationtimer:2 --> 2 * 60 --> Duration = 120 s)
     void TurnOffIn(unsigned long int Duration) noexcept
     {
-        LOG_CLOCK(String("Clock got new off duration time: ") + Duration)
+        LOG_CLOCK(String("Clock got new off duration time: ") + Duration + " s")
         turnOffAfterDuration_ = rtc_->now().unixtime() + Duration;
     }
 
     // Time to turn the machine on as minutes from midnight
     void TurnOnAt(unsigned long int MinutesFromMidnight) noexcept
     {
+        // trunkate input to at least midnight
+        constexpr const auto midnight = 24 * 60;  // TODO: move to cpp static member
+        if (MinutesFromMidnight > midnight)
+        {
+            LOG_CLOCK("Invalid turn on input; truncate to midnight")
+            MinutesFromMidnight = midnight;
+        }
         LOG_CLOCK(String("Clock got new turn on time: ") + MinutesFromMidnight)
         turnOnAt_ = MinutesFromMidnight;
     }
@@ -113,6 +136,13 @@ class Clock final
     // Time to turn the machine off as minutes from midnight
     void TurnOffAt(unsigned long int MinutesFromMidnight) noexcept
     {
+        // trunkate input to at least midnight
+        constexpr const auto midnight = 24 * 60;  // TODO: move to cpp static member
+        if (MinutesFromMidnight > midnight)
+        {
+            LOG_CLOCK("Invalid turn off input; truncate to midnight")
+            MinutesFromMidnight = midnight;
+        }
         LOG_CLOCK(String("Clock got new turn off time: ") + MinutesFromMidnight)
         turnOffAt_ = MinutesFromMidnight;
     }

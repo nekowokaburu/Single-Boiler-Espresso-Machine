@@ -5,6 +5,9 @@ Communicator::Communicator() : receivedMessage_(""), receivedCommand_{Command::N
     Serial.begin(57600);
     while (!Serial)
         ;
+
+    // This helps to see if the device crashes or resets at some point.
+    Serial.println("Communicator initialized!");
 }
 
 enum Communicator::Command Communicator::Command() noexcept
@@ -33,10 +36,11 @@ void Communicator::Update() noexcept
 
     if (receivedMessage_.length())
     {  // if string is not empty do the following
-        LOG_COMM(String("Received Message: ") + receivedMessage_);
+        LOG_COMM(String("Received Message: ") + receivedMessage_)
 
         auto receivedMessageLower(receivedMessage_);
         receivedMessageLower.toLowerCase();
+        receivedMessageLower.trim();
 
         if (receivedMessageLower == "turnon")
             receivedCommand_ = Command::TurnOn;
@@ -75,6 +79,12 @@ void Communicator::Update() noexcept
 
         receivedMessage_ = "";
     }
+}
+
+void Communicator::SendMessage(String Message) const noexcept
+{
+    LOG_COMM(String("Sending message: ") + Message)
+    Serial.println(Message);
 }
 
 void Communicator::SetValueFromMessage(const String& Message)

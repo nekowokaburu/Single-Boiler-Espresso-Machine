@@ -4,13 +4,13 @@
 #include <Arduino.h>
 
 // Global useful parameters to set for building and testing
-#define DISABLE_HEATER 0  // default false; if true the heater will never actually turn on, all code paths run normally
+#define DISABLE_HEATER 1  // default false; if true the heater will never actually turn on, all code paths run normally
 // Load eeprom parameters as far as available with settings here as fallback
 // ATTENTION: On a new board, this must at least be true ONCE to initialize the EEPROM to valid values!
 #define LOAD_INITIAL_PARAMETERS_FROM_EEPROM 0  // Default true;
 
 // Turn on/off debug information for each module
-#define DEBUG_EEPROM_MEMORY 1
+#define DEBUG_EEPROM_MEMORY 0
 #define DEBUG_EEPROM_MEMORY_PRECISION 0
 #define DEBUG_CLOCK 1
 #define DEBUG_COMM 1

@@ -1,6 +1,8 @@
 #ifndef __RTC_HPP
 #define __RTC_HPP
 
+#include <time.h>
+
 #include <DS3231.h>
 
 #include "settings.hpp"
@@ -9,7 +11,12 @@
 class RTC : public DS3231, public RTClib
 {
   public:
-    RTC() : ds3231_{new DS3231()} { Wire.begin(); }
+    RTC() : ds3231_{new DS3231()}
+    {
+        Wire.begin();
+        // Always set to 24 hour format
+        ds3231_->setClockMode(false);
+    }
 
     ~RTC() { delete ds3231_; }
 
@@ -38,73 +45,16 @@ class Clock final
         On    // Timer wants the machine to be on
     };
 
-    Clock(uint8_t NumberOfAvailableTimers = 1)
-        : rtc_{new RTC()},
-          turnOffAfterDuration_{0},
-          turnOnAt_{0},
-          turnOffAt_{0},
-          days_{0},
-          hasNewState_{false},
-          state_{State::Off}
-    {
-    }
+    Clock(uint8_t NumberOfAvailableTimers = 1);
 
-    ~Clock() { delete rtc_; };
+    ~Clock();
 
-    void Update() noexcept
-    {
-        const auto oldState = state_;
-        const auto dateTime = rtc_->now();
-        const auto unixTime = dateTime.unixtime();
+    void Update() noexcept;
 
-        uint8_t weekday = rtc_->DayOfWeek();
+    // Get the weekdays the timer is active, represented as byte with sunday as lsb
+    uint8_t Days() const noexcept { return days_; }
 
-        LOG_CLOCK(String("Clock update: Current: ") + dateTime.hour() + ":" + dateTime.minute() +
-                  " timer1On: " + GetHours(turnOnAt_) + ":" + GetMinutes(turnOnAt_) +
-                  " -- unixtime >= duration: " + unixTime + ">=" + turnOffAfterDuration_)
-
-        // First the on stages, then the off stages to overwrite on stage.
-        // Assumption:
-        // One can only turn the machine off after it was turned on.
-        // It is not possible to turn a machine off and on later in the same day.
-        if (state_ != State::On && (weekday & days_) && dateTime.hour() >= GetHours(turnOnAt_) &&
-            dateTime.minute() >= GetMinutes(turnOnAt_))
-        {
-            LOG_CLOCK(String("Turn on at: ") + dateTime.hour() + ":" + dateTime.minute() +
-                      " >= " + GetHours(turnOnAt_) + ":" + GetMinutes(turnOnAt_))
-            state_ = State::On;
-            hasNewState_ = true;
-        }
-
-        if (turnOffAfterDuration_ != 0 && unixTime >= turnOffAfterDuration_)
-        {
-            LOG_CLOCK(String("Turn off after duration: ") + turnOffAfterDuration_ + " >= " + unixTime)
-            turnOffAfterDuration_ = 0;
-            state_ = State::Off;
-            hasNewState_ = true;
-        }
-        // If the machine should only turn on, turnOffAt_ is 0.
-        if (turnOffAt_ != 0 && state_ != State::Off && (weekday & days_) && dateTime.hour() >= GetHours(turnOffAt_) &&
-            dateTime.minute() >= GetMinutes(turnOffAt_))
-        {
-            // Check that off timer comes after the on timer, else ignore it
-            if (turnOffAt_ > turnOnAt_)
-            {
-                LOG_CLOCK(String("Turn off at: ") + dateTime.hour() + ":" + dateTime.minute() +
-                          " >= " + GetHours(turnOffAt_) + ":" + GetMinutes(turnOffAt_))
-                state_ = State::Off;
-                hasNewState_ = true;
-            }
-            else
-            {
-                LOG_CLOCK("Turn off time lies before turn on time and is therefore ignored")
-            }
-        }
-
-        // Check if a possibly triggered timer event is new
-        // hasNewState_ = oldState != state_;
-    }
-
+    // Sets the weekdays the timer is active, represented as byte with sunday as lsb
     void SetDays(const uint8_t Days)
     {
         LOG_CLOCK(String("Clock got new timer days: ") + Days)
@@ -113,51 +63,61 @@ class Clock final
 
     // Duration in seconds to turn the machine off.
     // Input changed to minutes in vbm.cpp; durationtimer:2 --> 2 * 60 --> Duration = 120 s)
-    void TurnOffIn(unsigned long int Duration) noexcept
-    {
-        LOG_CLOCK(String("Clock got new off duration time: ") + Duration + " s")
-        turnOffAfterDuration_ = rtc_->now().unixtime() + Duration;
-    }
+    void SetTurnOffIn(unsigned long int Duration) noexcept;
 
-    // Time to turn the machine on as minutes from midnight
-    void TurnOnAt(unsigned long int MinutesFromMidnight) noexcept
-    {
-        // trunkate input to at least midnight
-        constexpr const auto midnight = 24 * 60;  // TODO: move to cpp static member
-        if (MinutesFromMidnight > midnight)
-        {
-            LOG_CLOCK("Invalid turn on input; truncate to midnight")
-            MinutesFromMidnight = midnight;
-        }
-        LOG_CLOCK(String("Clock got new turn on time: ") + MinutesFromMidnight)
-        turnOnAt_ = MinutesFromMidnight;
-    }
+    // Get the time to turn the machine on as minutes from midnight
+    unsigned long int TurnOnAt() const noexcept { return turnOnAt_; }
+
+    // Set the time to turn the machine on as minutes from midnight
+    void SetTurnOnAt(unsigned long int MinutesFromMidnight) noexcept;
+
+    // Get the time to turn the machine on as minutes from midnight
+    unsigned long int TurnOffAt() const noexcept { return turnOffAt_; }
 
     // Time to turn the machine off as minutes from midnight
-    void TurnOffAt(unsigned long int MinutesFromMidnight) noexcept
-    {
-        // trunkate input to at least midnight
-        constexpr const auto midnight = 24 * 60;  // TODO: move to cpp static member
-        if (MinutesFromMidnight > midnight)
-        {
-            LOG_CLOCK("Invalid turn off input; truncate to midnight")
-            MinutesFromMidnight = midnight;
-        }
-        LOG_CLOCK(String("Clock got new turn off time: ") + MinutesFromMidnight)
-        turnOffAt_ = MinutesFromMidnight;
-    }
+    void SetTurnOffAt(unsigned long int MinutesFromMidnight) noexcept;
 
     // Get the current timer state
     State State() const noexcept { return state_; }
 
     // Gets whether the clock timer state has changed
-    bool HasNewState() noexcept
+    bool HasNewState() noexcept;
+
+    // Get the current unix time
+    unsigned long int UnixTime() const noexcept
     {
-        if (hasNewState_)
-        {
-            LOG_CLOCK(String("Clock has a new state: ") + static_cast<int>(state_))
-        }
-        return hasNewState_;
+        // return rtc_->now().unixtime();
+
+        struct tm time;
+        time.tm_year = rtc_->now().year() - 1900;  // Year - 1900
+        time.tm_mon = rtc_->now().month() - 1;     // Month, where 0 = jan
+        time.tm_mday = rtc_->now().day();          // Day of the month
+        time.tm_hour = rtc_->now().hour();
+        time.tm_min = rtc_->now().minute();
+        time.tm_sec = rtc_->now().second();
+        time.tm_isdst = -1;  // Is DST on? 1 = yes, 0 = no, -1 = unknown
+        const time_t unixTime = mktime(&time) + UNIX_OFFSET;
+        LOG_CLOCK(String("Getting unix time from DS3231; current time: ") + (rtc_->now().year()) + "/" +
+                  (rtc_->now().month()) + "/" + rtc_->now().day() + " -- " + rtc_->now().hour() + ":" +
+                  rtc_->now().minute() + ":" + rtc_->now().second() + "; == " + unixTime + "s")
+        return unixTime;
+    }
+
+    void SetTimeFromUnixTime(unsigned long int CurrentUnixTime)
+    {
+        struct tm epoch;
+        time_t timeFrom2k = CurrentUnixTime - UNIX_OFFSET;
+        memcpy(&epoch, gmtime(&timeFrom2k), sizeof(struct tm));
+        LOG_CLOCK(String("Set App time from ") + CurrentUnixTime + " over 30a unix offset: " + timeFrom2k +
+                  " to DS3231: " + (epoch.tm_year + 1900) + '/' + (epoch.tm_mon + 1) + '/' + epoch.tm_mday + " - " +
+                  epoch.tm_hour + ':' + epoch.tm_min + ':' + epoch.tm_sec + " weekday: " + (epoch.tm_wday + 1))
+        rtc_->setYear(epoch.tm_year + 1900 - 48);  // time from 1900 // TODO: Write own DS3231 lib as this one seems really messed up
+        rtc_->setMonth(epoch.tm_mon + 1);     // 0 indexed
+        rtc_->setDate(epoch.tm_mday);         // days start at one
+        rtc_->setDoW(epoch.tm_wday + 1);      // we want the week to start at sunday represented by 1
+        rtc_->setHour(epoch.tm_hour);
+        rtc_->setMinute(epoch.tm_min);
+        rtc_->setSecond(epoch.tm_sec);
     }
 
   private:

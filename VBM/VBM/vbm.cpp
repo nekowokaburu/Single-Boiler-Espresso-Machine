@@ -7,8 +7,8 @@ VBM::VBM()
       buttonBrew_(new ButtonBrew()),
       communicator_(new Communicator()),
       machineState_{State::Off},
-      eeprom_{new Eeprom()},
       clock_{new Clock()},
+      eeprom_{new Eeprom()},
       currentTime_{0},
       pumpOn_{false},
       wasBrewing_{false}
@@ -20,8 +20,12 @@ VBM::VBM()
         Serial.println(
             "WARNING: Heater disabled, code will run normally but machine will not heat up! Set DISABLE_HEATER to "
             "false for normal use!");
+    if (DISABLE_PUMP)
+        Serial.println(
+            "WARNING: Pump disabled, code will run normally but machine will not pump! Set DISABLE_PUMP to "
+            "false for normal use!");
 
-#ifdef INITIALIZE_EEPROM
+#if INITIALIZE_EEPROM
     eeprom_->Save(Eeprom::Parameter::SetpointBrew, SETPOINT_BREW_TEMP);
     eeprom_->Save(Eeprom::Parameter::SetpointSteam, SETPOINT_STEAM_TEMP);
 #endif
@@ -30,6 +34,14 @@ VBM::VBM()
 #if LOAD_INITIAL_PARAMETERS_FROM_EEPROM
     eeprom_->Load(Eeprom::Parameter::SetpointBrew, SETPOINT_BREW_TEMP);
     eeprom_->Load(Eeprom::Parameter::SetpointSteam, SETPOINT_STEAM_TEMP);
+
+    // Initialize clock parameters
+    byte daysTimer1 = 0;
+    eeprom_->Load(Eeprom::Parameter::Timer1Days, daysTimer1);
+    clock_->SetDays(daysTimer1);
+
+    // TODO: Continue
+
 #endif
 }
 
@@ -88,6 +100,7 @@ void VBM::Update() noexcept
         {
             LOG_VBM("VBM Timer turn machine off")
             machineState_ = State::Off;
+            communicator_->SendMessageOnce("turnedon", 0);
         }
         else if (clock_->State() == Clock::State::On)
         {
@@ -96,18 +109,13 @@ void VBM::Update() noexcept
             {
                 heater_->SetHeaterTo(Heater::State::BrewTemp);
                 machineState_ = State::HeatingUpBrew;
+                communicator_->SendMessageOnce("turnedon", 1);
             }
         }
     }
 
     // Brew lever state changed
-    const bool isBrewing = buttonBrew_->IsPressed();
-    if (machineState_ != State::Off && wasBrewing_ != isBrewing)
-    {
-        isBrewing ? digitalWrite(PUMP_SSR_PIN, HIGH) : digitalWrite(PUMP_SSR_PIN, LOW);
-        pumpOn_ = isBrewing;
-        wasBrewing_ = isBrewing;
-    }
+    HandleBrewLever(buttonBrew_->IsPressed());
 
     // Update possible button input
     button_->Update();
@@ -142,6 +150,7 @@ void VBM::HandleButton(Button::Command ButtonCommand) noexcept
             {
                 heater_->SetHeaterTo(Heater::State::BrewTemp);
                 machineState_ = State::HeatingUpBrew;
+                communicator_->SendMessageOnce("turnedon", 1);
             }
             else
                 TogglePump();
@@ -177,6 +186,7 @@ void VBM::HandleButton(Button::Command ButtonCommand) noexcept
             heater_->SetHeaterTo(Heater::State::Off);
             TurnPumpOff();
             machineState_ = State::Off;
+            communicator_->SendMessageOnce("turnedon", 0);
         }
         break;
 
@@ -186,6 +196,20 @@ void VBM::HandleButton(Button::Command ButtonCommand) noexcept
             machineState_ = State::Error;
         }
         break;
+    }
+}
+
+void VBM::HandleBrewLever(bool IsBrewing) noexcept
+{
+    if (machineState_ != State::Off && wasBrewing_ != IsBrewing)
+    {
+        if (!DISABLE_PUMP)
+            IsBrewing ? digitalWrite(PUMP_SSR_PIN, HIGH) : digitalWrite(PUMP_SSR_PIN, LOW);
+        pumpOn_ = IsBrewing;
+        wasBrewing_ = IsBrewing;
+
+        // Also let the App know if we brew or not for timers and such
+        communicator_->SendMessageOnce("isbrewing", IsBrewing);
     }
 }
 
@@ -238,7 +262,8 @@ void VBM::HandleCommunication(enum Communicator::Command Command) noexcept
         }
         break;
         case Communicator::Command::UpdateSetpointBrew: {
-            const auto newSetpointBrew = communicator_->Value();
+            float newSetpointBrew = 0;
+            communicator_->Value(newSetpointBrew);
             LOG_VBM(String("communication: UpdateSetpointBrew:") + newSetpointBrew)
             SETPOINT_BREW_TEMP = newSetpointBrew;
             // Save the new setpoint to the eeprom, cast to be excactly clear what type we want!
@@ -246,7 +271,8 @@ void VBM::HandleCommunication(enum Communicator::Command Command) noexcept
         }
         break;
         case Communicator::Command::UpdateSetpointSteam: {
-            const auto newSetpointSteam = communicator_->Value();
+            float newSetpointSteam = 0;
+            communicator_->Value(newSetpointSteam);
             LOG_VBM(String("communication: UpdateSetpointSteam:") + newSetpointSteam)
             SETPOINT_STEAM_TEMP = newSetpointSteam;
             // Save the new setpoint to the eeprom, cast to be excactly clear what type we want!
@@ -254,32 +280,49 @@ void VBM::HandleCommunication(enum Communicator::Command Command) noexcept
         }
         break;
         case Communicator::Command::DurationTimer: {
-            const auto durationInMin = communicator_->Value();
+            unsigned long int durationInMin = 0;
+            communicator_->Value(durationInMin);
             LOG_VBM(String("communication: Turn machine off in ") + durationInMin * 60 + " s")
-            clock_->TurnOffIn(durationInMin * 60);
+            clock_->SetTurnOffIn(durationInMin * 60);
         }
         break;
         case Communicator::Command::DaysTimer1: {
-            const uint8_t daysTimer1 = communicator_->Value();
+            uint8_t daysTimer1 = 0;
+            communicator_->Value(daysTimer1);
             LOG_VBM(String("communication: Set days to ") + daysTimer1)
             clock_->SetDays(daysTimer1);
+            eeprom_->Save(Eeprom::Parameter::Timer1Days, daysTimer1);
         }
         break;
         case Communicator::Command::Timer1On: {
-            const auto timeFromMidnightInMinOn = communicator_->Value();
+            unsigned long int timeFromMidnightInMinOn = 0;
+            communicator_->Value(timeFromMidnightInMinOn);
             LOG_VBM(String("communication: Turn machine on at ") +
                     static_cast<int>((timeFromMidnightInMinOn - static_cast<int>(timeFromMidnightInMinOn) % 60) / 60) +
                     ":" + static_cast<int>(timeFromMidnightInMinOn) % 60)
-            clock_->TurnOnAt(timeFromMidnightInMinOn);
+            clock_->SetTurnOnAt(timeFromMidnightInMinOn);
         }
         break;
         case Communicator::Command::Timer1Off: {
-            const auto timeFromMidnightInMinOff = communicator_->Value();
+            unsigned long int timeFromMidnightInMinOff = 0;
+            communicator_->Value(timeFromMidnightInMinOff);
             LOG_VBM(
                 String("communication: Turn machine off at ") +
                 static_cast<int>((timeFromMidnightInMinOff - static_cast<int>(timeFromMidnightInMinOff) % 60) / 60) +
                 ":" + static_cast<int>(timeFromMidnightInMinOff) % 60)
-            clock_->TurnOffAt(timeFromMidnightInMinOff);
+            clock_->SetTurnOffAt(timeFromMidnightInMinOff);
+        }
+        break;
+        case Communicator::Command::SetUnixTime: {
+            unsigned long int appUnixTime = 0;
+            communicator_->Value(appUnixTime);
+            LOG_VBM(String("communication: Got App unix time to update DS3231: ") + appUnixTime)
+            clock_->SetTimeFromUnixTime(appUnixTime);
+        }
+        break;
+        case Communicator::Command::UpdateApp: {
+            LOG_VBM("communication: UpdateApp")
+            UpdateApp();
         }
         break;
         default: {
@@ -293,13 +336,15 @@ void VBM::HandleCommunication(enum Communicator::Command Command) noexcept
 void VBM::TogglePump() noexcept
 {
     pumpOn_ = !pumpOn_;
-    digitalWrite(PUMP_SSR_PIN, pumpOn_);
+    if (!DISABLE_PUMP)
+        digitalWrite(PUMP_SSR_PIN, pumpOn_);
     LOG_VBM(String("Pump toggled: ") + pumpOn_)
 }
 
 void VBM::TurnPumpOff() noexcept
 {
     pumpOn_ = false;
-    digitalWrite(PUMP_SSR_PIN, pumpOn_);
+    if (!DISABLE_PUMP)
+        digitalWrite(PUMP_SSR_PIN, pumpOn_);
     LOG_VBM("Pump turned off");
 }

@@ -19,8 +19,9 @@ class Eeprom
     //    b) update VBM communication handler to also save the parameters to eeprom
     enum class Parameter
     {
-        SetpointBrew,  // double
-        SetpointSteam  // double
+        SetpointBrew = 0,  // double
+        SetpointSteam,     // double
+        Timer1Days,        // byte
     };
 
     // Saves a value from a known Parameter and manages sorting of size and position in EEPROM.
@@ -36,8 +37,9 @@ class Eeprom
   private:
     // Array to save the eeprom index and expected size of each savable/loadable value.
     // Increment the index by the sum of the previous sizes, set the size to the desired one for the new parameter.
-    const uint8_t eepromIdx_[2][2] = {{0, 4},   // {{SetpointBrew, double},
-                                      {4, 4}};  //{SetpointSteam, double}}
+    const uint8_t eepromIdx_[3][2] = {{0, 4},   // {{SetpointBrew, double},
+                                      {4, 4},   //{SetpointSteam, double},
+                                      {8, 1}};  // {Timer1Days, byte}
 };
 
 template <class T>
@@ -45,14 +47,15 @@ bool Eeprom::Save(Parameter Parameter, T Value) noexcept
 {
     const auto size = sizeof(T);
     LOG_EEPROM_MEMORY(String("Checking Save to eeprom; Idx: ") + eepromIdx_[static_cast<uint8_t>(Parameter)][0] +
-                        ", expected size: " + eepromIdx_[static_cast<uint8_t>(Parameter)][1] + ", actual size: " + size)
+                      ", expected size: " + eepromIdx_[static_cast<uint8_t>(Parameter)][1] + ", actual size: " + size)
     if (eepromIdx_[static_cast<uint8_t>(Parameter)][1] != size)
         return false;
     LOG_EEPROM_MEMORY("OK")
 
     auto* byteArray = reinterpret_cast<byte*>(&Value);
-    for (auto i = eepromIdx_[static_cast<uint8_t>(Parameter)][0]; i < size; i++)
-        EEPROM.write(i, byteArray[i]);
+    const auto location = eepromIdx_[static_cast<uint8_t>(Parameter)][0];
+    for (auto i = 0; i < size; i++)
+        EEPROM.write(location + i, byteArray[i]);
     return true;
 }
 
@@ -62,14 +65,15 @@ bool Eeprom::Load(Parameter Parameter, T& Value) const noexcept
     const auto size = sizeof(T);
 
     LOG_EEPROM_MEMORY(String("Checking Load from eeprom; Idx: ") + eepromIdx_[static_cast<uint8_t>(Parameter)][0] +
-                        ", expected size: " + eepromIdx_[static_cast<uint8_t>(Parameter)][1] + ", actual size: " + size)
+                      ", expected size: " + eepromIdx_[static_cast<uint8_t>(Parameter)][1] + ", actual size: " + size)
     if (eepromIdx_[static_cast<uint8_t>(Parameter)][1] != size)
         return false;
-    LOG_EEPROM_MEMORY("OK")
+    LOG_EEPROM_MEMORY("OK; loaded")
 
     byte byteArray[size];
-    for (auto i = eepromIdx_[static_cast<uint8_t>(Parameter)][0]; i < size; i++)
-        byteArray[i] = EEPROM.read(i);
+    const auto location = eepromIdx_[static_cast<uint8_t>(Parameter)][0];
+    for (auto i = 0; i < size; i++)
+        byteArray[i] = EEPROM.read(location + i);
 
     LOG_EEPROM_MEMORY_PRECISION(Value)
     Value = *reinterpret_cast<T*>(byteArray);

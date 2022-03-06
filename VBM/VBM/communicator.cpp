@@ -1,6 +1,6 @@
 #include "communicator.hpp"
 
-Communicator::Communicator() : receivedMessage_(""), receivedCommand_{Command::None}, receivedValue_{0}
+Communicator::Communicator() : receivedMessage_(""), receivedCommand_{Command::None}
 {
     Serial.begin(57600);
     while (!Serial)
@@ -12,22 +12,17 @@ Communicator::Communicator() : receivedMessage_(""), receivedCommand_{Command::N
 
 enum Communicator::Command Communicator::Command() noexcept
 {
-    LOG_COMM(String("returning received command: ") + static_cast<int>(receivedCommand_));
+    LOG_COMM(String("returning received command: ") + static_cast<int>(receivedCommand_))
     auto const receivedCommandTmp = receivedCommand_;
     receivedCommand_ = Command::None;
     return receivedCommandTmp;
 }
 
-double Communicator::Value() noexcept
-{
-    LOG_COMM(String("returning received value: ") + receivedValue_)
-    auto const receivedValueTmp = receivedValue_;
-    receivedValue_ = 0;
-    return receivedValueTmp;
-}
-
 void Communicator::Update() noexcept
 {
+    // Reset the received message which is only valid for one update cycle and contains the value as well
+    receivedMessage_ = "";
+
     // Might be better to only do this once and rely on outer update loop?
     // Actually this should also only run if the Command and value were retrieved. Can be protected here or in VBM
     // class logic (currently the case).
@@ -48,48 +43,46 @@ void Communicator::Update() noexcept
             receivedCommand_ = Command::TurnOff;
         else if (receivedMessageLower.startsWith(String("setpointbrew")))
         {
-            SetValueFromMessage(receivedMessage_);
             receivedCommand_ = Command::UpdateSetpointBrew;
         }
         else if (receivedMessageLower.startsWith(String("setpointsteam")))
         {
-            SetValueFromMessage(receivedMessage_);
             receivedCommand_ = Command::UpdateSetpointSteam;
         }
         else if (receivedMessageLower.startsWith(String("durationtimer")))
         {
-            SetValueFromMessage(receivedMessage_);
             receivedCommand_ = Command::DurationTimer;
         }
         else if (receivedMessageLower.startsWith(String("daystimer1")))
         {
-            SetValueFromMessage(receivedMessage_);
             receivedCommand_ = Command::DaysTimer1;
         }
         else if (receivedMessageLower.startsWith(String("timer1on")))
         {
-            SetValueFromMessage(receivedMessage_);
             receivedCommand_ = Command::Timer1On;
         }
         else if (receivedMessageLower.startsWith(String("timer1off")))
         {
-            SetValueFromMessage(receivedMessage_);
             receivedCommand_ = Command::Timer1Off;
         }
-
-        receivedMessage_ = "";
+        else if (receivedMessageLower.startsWith(String("setunixtime")))
+        {
+            receivedCommand_ = Command::SetUnixTime;
+        }
+        else if (receivedMessageLower.startsWith(String("updateapp")))
+        {
+            receivedCommand_ = Command::UpdateApp;
+        }
     }
 }
 
-void Communicator::SendMessage(String Message) const noexcept
+void Communicator::SendMessageOnce(String Message) const noexcept
 {
     LOG_COMM(String("Sending message: ") + Message)
     Serial.println(Message);
 }
 
-void Communicator::SetValueFromMessage(const String& Message)
+void Communicator::SendMessageOnce(String Message, double Value) const noexcept
 {
-    const auto numberStartsAfter = Message.indexOf(String(":"));
-    receivedValue_ = Message.substring(numberStartsAfter + 1).toDouble();
-    LOG_COMM(String("message: ") + Message + " extracted value: " + receivedValue_)
+    SendMessageOnce(String(">") + Message + ":" + Value);
 }

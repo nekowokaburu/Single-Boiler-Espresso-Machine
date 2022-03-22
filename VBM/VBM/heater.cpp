@@ -14,9 +14,7 @@ Heater::Heater()
 
     thermocouple_->begin(MAX31865_TYPE);
 
-    pid_ = new VBMPID(&currentTemperature_, &setpoint_, &relayState_, WINDOW_SIZE, KP, KI, KD);
-    // pid_->setBangBang(12);
-    pid_->setTimeStep(WINDOW_SIZE);
+    pid_ = new StuPIDRelay(&currentTemperature_, &setpoint_, &relayState_, WINDOW_SIZE, &KP, &KI, &KD);
 }
 
 Heater::~Heater()

@@ -48,6 +48,12 @@ The current PCB has support for up to:
 <img src="PCB/2D.JPG" width="400">
 </p>
 
+## PID
+Here an example of the hot machine turned on (debugging), heating up to stream temperature. In my case, slow does the trick as an overshoot might trigger the failsave. When opening the steam wand, the temperature starts falling initially, the PID registers the changes and turn the heater 100 % on for the time the steam wand is used. After that I ran water from the tank throught the machine until the boiler was full again and switched back to brew mode. Luckily the boiler temperature was already in the right ballpark, PID kicked in a bit to stabilize and then turned off for the rest of the recording as the temperature is very close to target already.
+<p align="center">
+<img src="Notes/PIDSettings_P0.08_I0.0001_D2.0_Window3000_veryClose.JPG" width="**">
+</p>
+
 
 -------------------------------------------------------------------------------------------------
 # Untested stuff

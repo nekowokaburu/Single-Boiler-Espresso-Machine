@@ -12,7 +12,6 @@ Communicator::Communicator() : receivedMessage_(""), receivedCommand_{Command::N
 
 enum Communicator::Command Communicator::Command() noexcept
 {
-    LOG_COMM(String("returning received command: ") + static_cast<int>(receivedCommand_))
     auto const receivedCommandTmp = receivedCommand_;
     receivedCommand_ = Command::None;
     return receivedCommandTmp;

@@ -22,6 +22,8 @@ class Eeprom
         SetpointBrew = 0,  // double
         SetpointSteam,     // double
         Timer1Days,        // byte
+        Timer1TurnOn,      // unsigned long int
+        Timer1TurnOff,     // unsigned long int
     };
 
     // Saves a value from a known Parameter and manages sorting of size and position in EEPROM.
@@ -37,9 +39,11 @@ class Eeprom
   private:
     // Array to save the eeprom index and expected size of each savable/loadable value.
     // Increment the index by the sum of the previous sizes, set the size to the desired one for the new parameter.
-    const uint8_t eepromIdx_[3][2] = {{0, 4},   // {{SetpointBrew, double},
-                                      {4, 4},   //{SetpointSteam, double},
-                                      {8, 1}};  // {Timer1Days, byte}
+    const uint8_t eepromIdx_[5][2] = {{0, 4},    // {{SetpointBrew, double},
+                                      {4, 4},    //  {SetpointSteam, double},
+                                      {8, 1},    //  {Timer1Days, byte}
+                                      {9, 4},    //  {Timer1TurnOn, unsigned long int}
+                                      {13, 4}};  //  {Timer1TurnOff, unsigned long int}}
 };
 
 template <class T>
@@ -52,10 +56,13 @@ bool Eeprom::Save(Parameter Parameter, T Value) noexcept
         return false;
     LOG_EEPROM_MEMORY("OK")
 
-    auto* byteArray = reinterpret_cast<byte*>(&Value);
+    byte* byteArray = reinterpret_cast<byte*>(&Value);
     const auto location = eepromIdx_[static_cast<uint8_t>(Parameter)][0];
     for (auto i = 0; i < size; i++)
+    {
         EEPROM.write(location + i, byteArray[i]);
+        LOG_EEPROM_MEMORY(String("Saving ") + byteArray[i] + " to eeprom location " + (location + i))
+    }
     return true;
 }
 
@@ -73,7 +80,10 @@ bool Eeprom::Load(Parameter Parameter, T& Value) const noexcept
     byte byteArray[size];
     const auto location = eepromIdx_[static_cast<uint8_t>(Parameter)][0];
     for (auto i = 0; i < size; i++)
+    {
         byteArray[i] = EEPROM.read(location + i);
+        LOG_EEPROM_MEMORY(String("Loading ") + byteArray[i] + " from eeprom location" + (location + i))
+    }
 
     LOG_EEPROM_MEMORY_PRECISION(Value)
     Value = *reinterpret_cast<T*>(byteArray);

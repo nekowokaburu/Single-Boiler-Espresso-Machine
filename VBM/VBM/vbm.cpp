@@ -28,6 +28,9 @@ VBM::VBM()
 #if INITIALIZE_EEPROM
     eeprom_->Save(Eeprom::Parameter::SetpointBrew, SETPOINT_BREW_TEMP);
     eeprom_->Save(Eeprom::Parameter::SetpointSteam, SETPOINT_STEAM_TEMP);
+    eeprom_->Save(Eeprom::Parameter::Timer1Days, 0);
+    eeprom_->Save(Eeprom::Parameter::Timer1TurnOn, 0);
+    eeprom_->Save(Eeprom::Parameter::Timer1TurnOff, 0);
 #endif
 
     // Load eeprom parameters with user set parameters as fallback if desired, for debugging sometimes not so smart
@@ -39,8 +42,14 @@ VBM::VBM()
     byte daysTimer1 = 0;
     eeprom_->Load(Eeprom::Parameter::Timer1Days, daysTimer1);
     clock_->SetDays(daysTimer1);
+    unsigned long int timer1TurnOn = 0;
+    if (eeprom_->Load(Eeprom::Parameter::Timer1TurnOn, timer1TurnOn) && timer1TurnOn)
+        clock_->SetTurnOnAt(timer1TurnOn);
+    unsigned long int timer1TurnOff = 0;
+    if (eeprom_->Load(Eeprom::Parameter::Timer1TurnOff, timer1TurnOff) && timer1TurnOff)
+        clock_->SetTurnOffAt(timer1TurnOff);
 
-    // TODO: Continue
+        // TODO: Continue
 
 #endif
 }
@@ -100,6 +109,7 @@ void VBM::Update() noexcept
         {
             LOG_VBM("VBM Timer turn machine off")
             machineState_ = State::Off;
+            heater_->SetHeaterTo(Heater::State::Off);
             communicator_->SendMessageOnce("turnedon", 0);
         }
         else if (clock_->State() == Clock::State::On)
@@ -107,8 +117,8 @@ void VBM::Update() noexcept
             LOG_VBM("VBM Timer turn machine on")
             if (machineState_ == State::Off || machineState_ == State::Sleep)
             {
-                heater_->SetHeaterTo(Heater::State::BrewTemp);
                 machineState_ = State::HeatingUpBrew;
+                heater_->SetHeaterTo(Heater::State::BrewTemp);
                 communicator_->SendMessageOnce("turnedon", 1);
             }
         }
@@ -301,6 +311,7 @@ void VBM::HandleCommunication(enum Communicator::Command Command) noexcept
                     static_cast<int>((timeFromMidnightInMinOn - static_cast<int>(timeFromMidnightInMinOn) % 60) / 60) +
                     ":" + static_cast<int>(timeFromMidnightInMinOn) % 60)
             clock_->SetTurnOnAt(timeFromMidnightInMinOn);
+            eeprom_->Save(Eeprom::Parameter::Timer1TurnOn, timeFromMidnightInMinOn);
         }
         break;
         case Communicator::Command::Timer1Off: {
@@ -311,6 +322,7 @@ void VBM::HandleCommunication(enum Communicator::Command Command) noexcept
                 static_cast<int>((timeFromMidnightInMinOff - static_cast<int>(timeFromMidnightInMinOff) % 60) / 60) +
                 ":" + static_cast<int>(timeFromMidnightInMinOff) % 60)
             clock_->SetTurnOffAt(timeFromMidnightInMinOff);
+            eeprom_->Save(Eeprom::Parameter::Timer1TurnOff, timeFromMidnightInMinOff);
         }
         break;
         case Communicator::Command::SetUnixTime: {

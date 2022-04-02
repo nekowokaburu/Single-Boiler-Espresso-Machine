@@ -31,17 +31,26 @@ void Clock::Update() noexcept
     //           GetHours(turnOnAt_) + ":" + GetMinutes(turnOnAt_) + " -- unixtime >= duration: " + unixTime +
     //           ">=" + turnOffAfterDuration_ + " -- secondsUNIX: " + (dateTime.unixtime() - UNIX_OFFSET))
 
+    bool wouldTurnOff = false;
+    // If the machine should only turn on, turnOffAt_ is 0.
+    if (turnOffAt_ != 0 && (weekday & days_) && dateTime.hour() >= GetHours(turnOffAt_) &&
+        dateTime.minute() >= GetMinutes(turnOffAt_))
+        wouldTurnOff = true;
+
     // First the on stages, then the off stages to overwrite on stage.
     // Assumption:
     // One can only turn the machine off after it was turned on.
     // It is not possible to turn a machine off and on later in the same day.
-    if (state_ != State::On && (weekday & days_) && dateTime.hour() >= GetHours(turnOnAt_) &&
+    if (state_ != State::On && turnOnAt_ != 0 && (weekday & days_) && dateTime.hour() >= GetHours(turnOnAt_) &&
         dateTime.minute() >= GetMinutes(turnOnAt_))
     {
-        LOG_CLOCK(String("Turn on at: ") + dateTime.hour() + ":" + dateTime.minute() + " >= " + GetHours(turnOnAt_) +
-                  ":" + GetMinutes(turnOnAt_))
-        state_ = State::On;
-        hasNewState_ = true;
+        if (!wouldTurnOff)
+        {
+            LOG_CLOCK(String("Turn on at: ") + dateTime.hour() + ":" + dateTime.minute() +
+                      " >= " + GetHours(turnOnAt_) + ":" + GetMinutes(turnOnAt_))
+            state_ = State::On;
+            hasNewState_ = true;
+        }
     }
 
     if (turnOffAfterDuration_ != 0 && unixTime >= turnOffAfterDuration_)
@@ -51,9 +60,7 @@ void Clock::Update() noexcept
         state_ = State::Off;
         hasNewState_ = true;
     }
-    // If the machine should only turn on, turnOffAt_ is 0.
-    if (turnOffAt_ != 0 && state_ != State::Off && (weekday & days_) && dateTime.hour() >= GetHours(turnOffAt_) &&
-        dateTime.minute() >= GetMinutes(turnOffAt_))
+    if (wouldTurnOff && state_ != State::Off)
     {
         // Check that off timer comes after the on timer, else ignore it
         if (turnOffAt_ > turnOnAt_)
@@ -82,7 +89,7 @@ void Clock::SetTurnOnAt(unsigned long int MinutesFromMidnight) noexcept
     if (MinutesFromMidnight > MIDNIGHT)
     {
         LOG_CLOCK("Invalid turn on input; truncate to midnight")
-        MinutesFromMidnight = MIDNIGHT;
+        MinutesFromMidnight = MinutesFromMidnight % MIDNIGHT;
     }
     LOG_CLOCK(String("Clock got new turn on time: ") + MinutesFromMidnight)
     turnOnAt_ = MinutesFromMidnight;
@@ -94,7 +101,7 @@ void Clock::SetTurnOffAt(unsigned long int MinutesFromMidnight) noexcept
     if (MinutesFromMidnight > MIDNIGHT)
     {
         LOG_CLOCK("Invalid turn off input; truncate to midnight")
-        MinutesFromMidnight = MIDNIGHT;
+        MinutesFromMidnight = MinutesFromMidnight % MIDNIGHT;
     }
     LOG_CLOCK(String("Clock got new turn off time: ") + MinutesFromMidnight)
     turnOffAt_ = MinutesFromMidnight;
@@ -105,6 +112,8 @@ bool Clock::HasNewState() noexcept
     if (hasNewState_)
     {
         LOG_CLOCK(String("Clock has a new state: ") + static_cast<int>(state_))
+        hasNewState_ = false;
+        return true;
     }
-    return hasNewState_;
+    return false;
 }

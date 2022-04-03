@@ -1,4 +1,12 @@
 # Single Boiler Espresso Machine
+## Disclaimer ##
+___
+This site, I or the manufacturers of espresso machines shall not be responsible or liable, directly or indirectly, for any damage or loss caused or alleged to be caused by or in  onnection with use of or reliance of this information. No approval has been given by the manufacturer for any modifications. Any modifications done should be carried out by
+qualified electrical personnel. 
+Applying this mod to your espresso machine or other machine will not only void your warranty but be irreversible where cuts or holes to the casing are made. Also you should know what you are doing when dealing with electricity, water, pressure and heat. This document makes no claim for correctness or completeness.
+___
+
+## Overview ##
 
 Here you find a full implementation which runs a single boiler espresso machine such as a Vibiemme Domobar. You can run this code, if your machine has (or will have):
 - Single brew/steam boiler
@@ -7,12 +15,12 @@ Here you find a full implementation which runs a single boiler espresso machine 
 - A lever switch starting the extraction (optional but convenient, present on all E61 groups)
 - I use a PT1000 thermocouple on the boiler with MAX31865
 
-This also uses a PID library to get better temperature stability. All I/O can be set in [settings.hpp](VBM/VBM/settings.hpp). There you'll also find some logging macros for debugging purpose which can be turned on or off.
+This also uses a [PID library](https://github.com/nekowokaburu/StuPID) to get better temperature stability. All I/O can be set in [settings.hpp](VBM/VBM/settings.hpp). There you'll also find some logging macros for debugging purpose which can be turned on or off.
 
-Future changes might include:
-+ MPC on the heater
-+ Time to turn the machine on and off and enable a sleep mode (depending on UTC rather than power-on-time)
-+ Bluetooth communication with a fitting Android App
+A basic time can be set to turn the machine on and off at a selected time for a set of selectable days.
+
+There is a Android app, which is not part of the project for publishing reasons, currently unpublished in the app store. If you are interested in the bluetooth app with machine settings, please let me know while it is unpublished.
+
 
 ### Machine usage
 - Press once to turn the machine on if it is off or toggle the pump on/off if the machine is already on

@@ -3,6 +3,15 @@
 
 #include <time.h>
 
+#ifdef _MSC_VER
+#include <stdint.h>
+
+#include <memory>
+
+#include "../tests/unittests/mock_rtc.hpp"
+#define LOG_CLOCK(message)
+#define String
+#else
 #include <DS3231.h>
 
 #include "settings.hpp"
@@ -34,6 +43,7 @@ class RTC : public DS3231, public RTClib
   private:
     DS3231* ds3231_;
 };
+#endif
 
 class Clock final
 {
@@ -111,10 +121,11 @@ class Clock final
         LOG_CLOCK(String("Set App time from ") + CurrentUnixTime + " over 30a unix offset: " + timeFrom2k +
                   " to DS3231: " + (epoch.tm_year + 1900) + '/' + (epoch.tm_mon + 1) + '/' + epoch.tm_mday + " - " +
                   epoch.tm_hour + ':' + epoch.tm_min + ':' + epoch.tm_sec + " weekday: " + (epoch.tm_wday + 1))
-        rtc_->setYear(epoch.tm_year + 1900 - 48);  // time from 1900 // TODO: Write own DS3231 lib as this one seems really messed up
-        rtc_->setMonth(epoch.tm_mon + 1);     // 0 indexed
-        rtc_->setDate(epoch.tm_mday);         // days start at one
-        rtc_->setDoW(epoch.tm_wday + 1);      // we want the week to start at sunday represented by 1
+        rtc_->setYear(epoch.tm_year + 1900 -
+                      48);  // time from 1900 // TODO: Write own DS3231 lib as this one seems really messed up
+        rtc_->setMonth(epoch.tm_mon + 1);  // 0 indexed
+        rtc_->setDate(epoch.tm_mday);      // days start at one
+        rtc_->setDoW(epoch.tm_wday + 1);   // we want the week to start at sunday represented by 1
         rtc_->setHour(epoch.tm_hour);
         rtc_->setMinute(epoch.tm_min);
         rtc_->setSecond(epoch.tm_sec);
@@ -123,11 +134,11 @@ class Clock final
   private:
     inline unsigned long int GetHours(unsigned long int MinutesFromMidnight)
     {
-        return (MinutesFromMidnight - MinutesFromMidnight % 60) / 60;
+        return (MinutesFromMidnight - GetMinutes(MinutesFromMidnight)) / 60;
     }
 
     inline unsigned long int GetMinutes(unsigned long int MinutesFromMidnight) { return MinutesFromMidnight % 60; }
-
+    
     RTC* rtc_;
     enum State state_;
 
@@ -137,6 +148,7 @@ class Clock final
     uint8_t days_;
     unsigned long int turnOnAt_;
     unsigned long int turnOffAt_;
+    uint8_t timerFiredOnceForTheDay_;
 };
 
 #endif

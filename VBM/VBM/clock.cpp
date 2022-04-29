@@ -3,11 +3,12 @@
 // Time from 00:00 to 24:00 which is our max timer value in minutes for turn on and off
 static constexpr const auto MIDNIGHT = 24 * 60 - 1;
 
-Clock::Clock(uint8_t NumberOfAvailableTimers = 1)
+Clock::Clock(uint8_t NumberOfAvailableTimers)
     : rtc_{new RTC()},
       turnOffAfterDuration_{0},
       turnOnAt_{0},
       turnOffAt_{0},
+      timerFiredOnceForTheDay_{0},
       days_{0},
       hasNewState_{false},
       state_{State::Off}
@@ -27,13 +28,17 @@ void Clock::Update() noexcept
 
     uint8_t weekday = rtc_->DayOfWeek();
 
+    // Reset timer if day changes
+    if (timerFiredOnceForTheDay_ != 0 && timerFiredOnceForTheDay_ != weekday)
+        timerFiredOnceForTheDay_ = 0;
+
     // LOG_CLOCK(String("Clock update: Current: ") + dateTime.hour() + ":" + dateTime.minute() + " timer1On: " +
     //           GetHours(turnOnAt_) + ":" + GetMinutes(turnOnAt_) + " -- unixtime >= duration: " + unixTime +
     //           ">=" + turnOffAfterDuration_ + " -- secondsUNIX: " + (dateTime.unixtime() - UNIX_OFFSET))
 
     bool wouldTurnOff = false;
     // If the machine should only turn on, turnOffAt_ is 0.
-    if (turnOffAt_ != 0 && (weekday & days_) && dateTime.hour() >= GetHours(turnOffAt_) &&
+    if (timerFiredOnceForTheDay_ && turnOffAt_ != 0 && (weekday & days_) && dateTime.hour() >= GetHours(turnOffAt_) &&
         dateTime.minute() >= GetMinutes(turnOffAt_))
         wouldTurnOff = true;
 
@@ -41,15 +46,19 @@ void Clock::Update() noexcept
     // Assumption:
     // One can only turn the machine off after it was turned on.
     // It is not possible to turn a machine off and on later in the same day.
-    if (state_ != State::On && turnOnAt_ != 0 && (weekday & days_) && dateTime.hour() >= GetHours(turnOnAt_) &&
-        dateTime.minute() >= GetMinutes(turnOnAt_))
+    if (!timerFiredOnceForTheDay_ && state_ != State::On && turnOnAt_ != 0 && (weekday & days_) &&
+        dateTime.hour() >= GetHours(turnOnAt_) && dateTime.minute() >= GetMinutes(turnOnAt_))
     {
+
+        // Machine would not turn off and
+        // if the machine was manually turn off, it was before timer would turn it on, not after
         if (!wouldTurnOff)
         {
             LOG_CLOCK(String("Turn on at: ") + dateTime.hour() + ":" + dateTime.minute() +
                       " >= " + GetHours(turnOnAt_) + ":" + GetMinutes(turnOnAt_))
             state_ = State::On;
             hasNewState_ = true;
+            timerFiredOnceForTheDay_ = weekday;
         }
     }
 
@@ -93,6 +102,7 @@ void Clock::SetTurnOnAt(unsigned long int MinutesFromMidnight) noexcept
     }
     LOG_CLOCK(String("Clock got new turn on time: ") + MinutesFromMidnight)
     turnOnAt_ = MinutesFromMidnight;
+    timerFiredOnceForTheDay_ = 0;
 }
 
 void Clock::SetTurnOffAt(unsigned long int MinutesFromMidnight) noexcept

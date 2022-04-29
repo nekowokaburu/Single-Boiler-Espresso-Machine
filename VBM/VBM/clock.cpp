@@ -103,6 +103,7 @@ void Clock::SetTurnOnAt(unsigned long int MinutesFromMidnight) noexcept
     LOG_CLOCK(String("Clock got new turn on time: ") + MinutesFromMidnight)
     turnOnAt_ = MinutesFromMidnight;
     timerFiredOnceForTheDay_ = 0;
+    state_ = State::Off;
 }
 
 void Clock::SetTurnOffAt(unsigned long int MinutesFromMidnight) noexcept

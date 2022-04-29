@@ -129,7 +129,7 @@ constexpr const double WINDOW_SIZE = 3000.0;
 
 #pragma region global program stuff
 
-const uint8_t IS_READY_RANGE = 2;          // +/- this range signals heater ready state
+const uint8_t IS_READY_RANGE = 4;          // +/- this range signals heater ready state
 const unsigned int BLINK_INTERVAL = 2500;  // blink time in milliseconds, max 4 on/off in this time
 
 const uint8_t BUTTON_PRESS_SHORT = 2;  // time to register short button press in seconds

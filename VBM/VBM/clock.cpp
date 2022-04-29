@@ -38,8 +38,9 @@ void Clock::Update() noexcept
 
     bool wouldTurnOff = false;
     // If the machine should only turn on, turnOffAt_ is 0.
-    if (timerFiredOnceForTheDay_ && turnOffAt_ != 0 && (weekday & days_) && dateTime.hour() >= GetHours(turnOffAt_) &&
-        dateTime.minute() >= GetMinutes(turnOffAt_))
+    if (turnOffAt_ != 0 && (weekday & days_) && dateTime.hour() >= GetHours(turnOffAt_) &&
+        dateTime.minute() >= GetMinutes(turnOffAt_) &&
+        turnOffAt_ > turnOnAt_)
         wouldTurnOff = true;
 
     // First the on stages, then the off stages to overwrite on stage.
@@ -94,7 +95,7 @@ void Clock::SetTurnOffIn(unsigned long int Duration) noexcept
 
 void Clock::SetTurnOnAt(unsigned long int MinutesFromMidnight) noexcept
 {
-    // trunkate input to at least midnight
+    // truncate input to at least midnight
     if (MinutesFromMidnight > MIDNIGHT)
     {
         LOG_CLOCK("Invalid turn on input; truncate to midnight")
@@ -108,7 +109,7 @@ void Clock::SetTurnOnAt(unsigned long int MinutesFromMidnight) noexcept
 
 void Clock::SetTurnOffAt(unsigned long int MinutesFromMidnight) noexcept
 {
-    // trunkate input to at least midnight
+    // truncate input to at least midnight
     if (MinutesFromMidnight > MIDNIGHT)
     {
         LOG_CLOCK("Invalid turn off input; truncate to midnight")

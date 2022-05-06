@@ -4,7 +4,7 @@
 static constexpr const auto MIDNIGHT = 24 * 60 - 1;
 
 Clock::Clock(uint8_t NumberOfAvailableTimers)
-    : rtc_{new RTC()},
+    : rtc_{new RTC_DS3231()},
       turnOffAfterDuration_{0},
       turnOnAt_{0},
       turnOffAt_{0},
@@ -26,7 +26,7 @@ void Clock::Update() noexcept
     const auto dateTime = rtc_->now();
     const auto unixTime = dateTime.unixtime();
 
-    uint8_t weekday = rtc_->DayOfWeek();
+    uint8_t weekday = dateTime.dayOfTheWeek();
 
     // Reset timer if day changes
     if (timerFiredOnceForTheDay_ != 0 && timerFiredOnceForTheDay_ != weekday)

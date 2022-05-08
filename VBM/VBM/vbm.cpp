@@ -286,7 +286,7 @@ void VBM::HandleCommunication(enum Communicator::Command Command) noexcept
             LOG_VBM(String("communication: UpdateSetpointSteam:") + newSetpointSteam)
             SETPOINT_STEAM_TEMP = newSetpointSteam;
             // Save the new setpoint to the eeprom, cast to be excactly clear what type we want!
-            eeprom_->Save(Eeprom::Parameter::SetpointBrew, static_cast<float>(newSetpointSteam));
+            eeprom_->Save(Eeprom::Parameter::SetpointSteam, static_cast<float>(newSetpointSteam));
         }
         break;
         case Communicator::Command::DurationTimer: {

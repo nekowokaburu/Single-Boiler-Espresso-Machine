@@ -4,8 +4,7 @@
 static constexpr const auto MIDNIGHT = 24 * 60 - 1;
 
 Clock::Clock(uint8_t NumberOfAvailableTimers)
-    : rtc_{new RTC_DS3231()},
-      turnOffAfterDuration_{0},
+    : turnOffAfterDuration_{0},
       turnOnAt_{0},
       turnOffAt_{0},
       timerFiredOnceForTheDay_{0},
@@ -13,17 +12,22 @@ Clock::Clock(uint8_t NumberOfAvailableTimers)
       hasNewState_{false},
       state_{State::Off}
 {
+    while (!Serial);
+    while (!rtc_.begin())
+    {
+        Serial.println("Couldn't find DS3231");
+        Serial.flush();
+        while (1)
+            delay(10);
+    }
 }
 
-Clock::~Clock()
-{
-    delete rtc_;
-}
+Clock::~Clock() {}
 
 void Clock::Update() noexcept
 {
     const auto oldState = state_;
-    const auto dateTime = rtc_->now();
+    const auto dateTime = rtc_.now();
     const auto unixTime = dateTime.unixtime();
 
     uint8_t weekday = dateTime.dayOfTheWeek();
@@ -32,15 +36,10 @@ void Clock::Update() noexcept
     if (timerFiredOnceForTheDay_ != 0 && timerFiredOnceForTheDay_ != weekday)
         timerFiredOnceForTheDay_ = 0;
 
-    // LOG_CLOCK(String("Clock update: Current: ") + dateTime.hour() + ":" + dateTime.minute() + " timer1On: " +
-    //           GetHours(turnOnAt_) + ":" + GetMinutes(turnOnAt_) + " -- unixtime >= duration: " + unixTime +
-    //           ">=" + turnOffAfterDuration_ + " -- secondsUNIX: " + (dateTime.unixtime() - UNIX_OFFSET))
-
     bool wouldTurnOff = false;
     // If the machine should only turn on, turnOffAt_ is 0.
     if (turnOffAt_ != 0 && (weekday & days_) && dateTime.hour() >= GetHours(turnOffAt_) &&
-        dateTime.minute() >= GetMinutes(turnOffAt_) &&
-        turnOffAt_ > turnOnAt_)
+        dateTime.minute() >= GetMinutes(turnOffAt_) && turnOffAt_ > turnOnAt_)
         wouldTurnOff = true;
 
     // First the on stages, then the off stages to overwrite on stage.
@@ -90,7 +89,7 @@ void Clock::Update() noexcept
 void Clock::SetTurnOffIn(unsigned long int Duration) noexcept
 {
     LOG_CLOCK(String("Clock got new off duration time: ") + Duration + " s")
-    turnOffAfterDuration_ = rtc_->now().unixtime() + Duration;
+    turnOffAfterDuration_ = rtc_.now().unixtime() + Duration;
 }
 
 void Clock::SetTurnOnAt(unsigned long int MinutesFromMidnight) noexcept

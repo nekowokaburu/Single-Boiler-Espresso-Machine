@@ -56,6 +56,9 @@ class VBM
         // Timer values to turn the machine off
         const auto timer1Off = clock_->TurnOffAt();
         Serial.println(String(">timer1off:") + timer1Off);
+
+        Serial.println(String(">setpointbrew:") + SETPOINT_BREW_TEMP);
+        Serial.println(String(">setpointsteam:") + SETPOINT_STEAM_TEMP);
     }
 
     // Helper for debug state

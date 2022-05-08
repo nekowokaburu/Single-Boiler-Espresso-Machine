@@ -4,7 +4,8 @@
 static constexpr const auto MIDNIGHT = 24 * 60 - 1;
 
 Clock::Clock(uint8_t NumberOfAvailableTimers)
-    : turnOffAfterDuration_{0},
+    : rtc_(new RTC_DS3231()),
+    turnOffAfterDuration_{0},
       turnOnAt_{0},
       turnOffAt_{0},
       timerFiredOnceForTheDay_{0},
@@ -14,7 +15,7 @@ Clock::Clock(uint8_t NumberOfAvailableTimers)
 {
     while (!Serial)
         ;
-    while (!rtc_.begin())
+    while (!rtc_->begin())
     {
         Serial.println("Couldn't find DS3231");
         Serial.flush();
@@ -23,12 +24,12 @@ Clock::Clock(uint8_t NumberOfAvailableTimers)
     }
 }
 
-Clock::~Clock() {}
+Clock::~Clock() { delete rtc_; }
 
 void Clock::Update() noexcept
 {
     const auto oldState = state_;
-    const auto dateTime = rtc_.now();
+    const auto dateTime = rtc_->now();
     const auto unixTime = dateTime.unixtime();
 
     uint8_t weekday = 1 << dateTime.dayOfTheWeek();
@@ -93,7 +94,7 @@ void Clock::Update() noexcept
 void Clock::SetTurnOffIn(unsigned long int Duration) noexcept
 {
     LOG_CLOCK(String("Clock got new off duration time: ") + Duration + " s")
-    turnOffAfterDuration_ = rtc_.now().unixtime() + Duration;
+    turnOffAfterDuration_ = rtc_->now().unixtime() + Duration;
 }
 
 void Clock::SetTurnOnAt(unsigned long int MinutesFromMidnight) noexcept

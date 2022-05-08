@@ -7,12 +7,12 @@
 
 class Clock final
 {
-  public:
+public:
     // State the timer can suggest to the machine
     enum class State
     {
-        Off,  // Timer says machine should be off
-        On    // Timer wants the machine to be on
+        Off, // Timer says machine should be off
+        On   // Timer wants the machine to be on
     };
 
     Clock(uint8_t NumberOfAvailableTimers = 1);
@@ -28,6 +28,11 @@ class Clock final
     void SetDays(const uint8_t Days)
     {
         LOG_CLOCK(String("Clock got new timer days: ") + Days)
+        if (Days & (1 << rtc_->now().dayOfTheWeek()))
+        {
+            timerFiredOnceForTheDay_ = 0;
+            state_ = State::Off;
+        }
         days_ = Days;
     }
 
@@ -56,23 +61,23 @@ class Clock final
     // Get the current unix time
     unsigned long int UnixTime() noexcept
     {
-        return rtc_.now().unixtime();
+        return rtc_->now().unixtime();
     }
 
     void SetTimeFromUnixTime(unsigned long int CurrentUnixTime)
     {
-        rtc_.adjust(DateTime(CurrentUnixTime));
+        rtc_->adjust(DateTime(CurrentUnixTime));
     }
 
-  private:
+private:
     inline unsigned long int GetHours(unsigned long int MinutesFromMidnight)
     {
         return (MinutesFromMidnight - GetMinutes(MinutesFromMidnight)) / 60;
     }
 
     inline unsigned long int GetMinutes(unsigned long int MinutesFromMidnight) { return MinutesFromMidnight % 60; }
-    
-    RTC_DS3231 rtc_;
+
+    RTC_DS3231 *rtc_;
     enum State state_;
 
     bool hasNewState_;

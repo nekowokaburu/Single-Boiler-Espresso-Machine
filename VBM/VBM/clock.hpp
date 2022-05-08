@@ -54,7 +54,7 @@ class Clock final
     bool HasNewState() noexcept;
 
     // Get the current unix time
-    unsigned long int UnixTime() const noexcept
+    unsigned long int UnixTime() noexcept
     {
         return rtc_.now().unixtime();
     }

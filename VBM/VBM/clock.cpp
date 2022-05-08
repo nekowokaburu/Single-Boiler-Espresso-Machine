@@ -12,7 +12,8 @@ Clock::Clock(uint8_t NumberOfAvailableTimers)
       hasNewState_{false},
       state_{State::Off}
 {
-    while (!Serial);
+    while (!Serial)
+        ;
     while (!rtc_.begin())
     {
         Serial.println("Couldn't find DS3231");
@@ -30,7 +31,11 @@ void Clock::Update() noexcept
     const auto dateTime = rtc_.now();
     const auto unixTime = dateTime.unixtime();
 
-    uint8_t weekday = dateTime.dayOfTheWeek();
+    uint8_t weekday = 1 << dateTime.dayOfTheWeek();
+
+    //  LOG_CLOCK(String("Clock update: Current: ") + dateTime.hour() + ":" + dateTime.minute() + " timer1On: " +
+    //                GetHours(turnOnAt_) + ":" + GetMinutes(turnOnAt_) + " -- timer1Off: " + GetHours(turnOffAt_) + ":" + GetMinutes(turnOffAt_)
+    //                + " State:" + (int)state_ + " firedonceforday: " + timerFiredOnceForTheDay_ + " weekday:" + weekday)
 
     // Reset timer if day changes
     if (timerFiredOnceForTheDay_ != 0 && timerFiredOnceForTheDay_ != weekday)
@@ -49,7 +54,6 @@ void Clock::Update() noexcept
     if (!timerFiredOnceForTheDay_ && state_ != State::On && turnOnAt_ != 0 && (weekday & days_) &&
         dateTime.hour() >= GetHours(turnOnAt_) && dateTime.minute() >= GetMinutes(turnOnAt_))
     {
-
         // Machine would not turn off and
         // if the machine was manually turn off, it was before timer would turn it on, not after
         if (!wouldTurnOff)

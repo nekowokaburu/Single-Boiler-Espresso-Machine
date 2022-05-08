@@ -18,11 +18,11 @@
             "includePath": [
                 "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\cores\\arduino",
                 "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\variants\\eightanaloginputs",
-                "C:\\Users\\Nico\\sketchbook\\libraries\\DS3231",
+                "C:\\Users\\Nico\\sketchbook\\libraries\\RTClib\\src",
+                "C:\\Users\\Nico\\sketchbook\\libraries\\Adafruit_BusIO",
                 "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\libraries\\Wire\\src",
                 "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\libraries\\EEPROM\\src",
                 "C:\\Users\\Nico\\sketchbook\\libraries\\Adafruit_MAX31865_library",
-                "C:\\Users\\Nico\\sketchbook\\libraries\\Adafruit_BusIO",
                 "C:\\Program Files (x86)\\Arduino\\hardware\\arduino\\avr\\libraries\\SPI\\src",
                 "C:\\Users\\Nico\\sketchbook\\libraries\\StuPID",
                 "c:\\program files (x86)\\arduino\\hardware\\tools\\avr\\lib\\gcc\\avr\\7.3.0\\include",
@@ -36,7 +36,7 @@
             "cppStandard": "c++11",
             "defines": [
                 "F_CPU=16000000L",
-                "ARDUINO=10812",
+                "ARDUINO=10819",
                 "ARDUINO_AVR_NANO",
                 "ARDUINO_ARCH_AVR",
                 "__DBL_MIN_EXP__=(-125)",

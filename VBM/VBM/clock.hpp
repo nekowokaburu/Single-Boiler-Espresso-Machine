@@ -2,7 +2,9 @@
 #define __RTC_HPP
 
 #include <time.h>
+
 #include <RTClib.h>
+
 #include "settings.hpp"
 
 class Clock final
@@ -54,15 +56,9 @@ class Clock final
     bool HasNewState() noexcept;
 
     // Get the current unix time
-    unsigned long int UnixTime() const noexcept
-    {
-        return rtc_.now().unixtime();
-    }
+    unsigned long int UnixTime() noexcept { return rtc_.now().unixtime(); }
 
-    void SetTimeFromUnixTime(unsigned long int CurrentUnixTime)
-    {
-        rtc_.adjust(DateTime(CurrentUnixTime));
-    }
+    void SetTimeFromUnixTime(unsigned long int CurrentUnixTime) { rtc_.adjust(DateTime(CurrentUnixTime)); }
 
   private:
     inline unsigned long int GetHours(unsigned long int MinutesFromMidnight)
@@ -71,7 +67,7 @@ class Clock final
     }
 
     inline unsigned long int GetMinutes(unsigned long int MinutesFromMidnight) { return MinutesFromMidnight % 60; }
-    
+
     RTC_DS3231 rtc_;
     enum State state_;
 

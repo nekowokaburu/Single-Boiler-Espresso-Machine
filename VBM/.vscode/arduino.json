@@ -2,5 +2,6 @@
     "sketch": "VBM\\VBM.ino",
     "configuration": "cpu=atmega328old",
     "board": "arduino:avr:nano",
-    "port": "COM9"
+    "port": "COM6",
+    "output": "./bin"
 }

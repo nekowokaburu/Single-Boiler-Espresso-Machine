@@ -61,6 +61,15 @@ class VBM
         Serial.println(String(">setpointsteam:") + SETPOINT_STEAM_TEMP);
     }
 
+    void Update() const noexcept
+    {
+      const auto now = clock_->rtc_->now();
+      Serial.println(String("RTCUnix: ") + now.unixtime());
+      Serial.println(String("weekday: ") + now.dayOfTheWeek());
+      Serial.println(String("clock: ") + now.month() + " - " + now.hour() + ":" + now.minute() + ":" + now.second());
+      // Serial.println(String(""));
+    }
+
     // Helper for debug state
     String StateToString() const noexcept;
 

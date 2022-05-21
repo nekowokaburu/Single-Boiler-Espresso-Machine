@@ -13,7 +13,7 @@
 // Turn on/off debug information for each module
 #define DEBUG_EEPROM_MEMORY 0
 #define DEBUG_EEPROM_MEMORY_PRECISION 0
-#define DEBUG_CLOCK 0
+#define DEBUG_CLOCK 1
 #define DEBUG_COMM 0
 #define DEBUG_BUTTON_SWITCH 0
 #define DEBUG_BUTTON_BREW 0

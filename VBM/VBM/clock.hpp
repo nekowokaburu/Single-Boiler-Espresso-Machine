@@ -71,6 +71,7 @@ public:
         rtc_->adjust(DateTime(CurrentUnixTime));
     }
 
+    RTC_DS3231 *rtc_;
 private:
     inline unsigned long int GetHours(unsigned long int MinutesFromMidnight)
     {
@@ -79,7 +80,6 @@ private:
 
     inline unsigned long int GetMinutes(unsigned long int MinutesFromMidnight) { return MinutesFromMidnight % 60; }
 
-    RTC_DS3231 *rtc_;
     enum State state_;
 
     bool hasNewState_;

@@ -21,7 +21,8 @@ class Communicator
         Timer1On,       // time when to turn the machine on in minutes from midnight
         Timer1Off,      // time when to turn the machine off in minutes from midnight
         SetUnixTime,    // current time from App as unix time stamp
-        UpdateApp       // send all interesting parameters to the connected application
+        UpdateApp,      // send all interesting parameters to the connected application
+        Update          // general update to print some stuff
     };
 
     Communicator();

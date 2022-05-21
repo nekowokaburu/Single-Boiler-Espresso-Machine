@@ -337,11 +337,6 @@ void VBM::HandleCommunication(enum Communicator::Command Command) noexcept
             UpdateApp();
         }
         break;
-        case Communicator::Command::Update: {
-            LOG_VBM("communication: Update")
-            Update();
-        }
-        break;
         default: {
             // Don't call the log heler as it would break the loop
             // Serial.println(String("HandleCommunication - not implemented command: ") + static_cast<int>(Command));

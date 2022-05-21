@@ -72,10 +72,6 @@ void Communicator::Update() noexcept
         {
             receivedCommand_ = Command::UpdateApp;
         }
-        else if (receivedMessageLower.startsWith(String("update")))
-        {
-            receivedCommand_ = Command::Update;
-        }
     }
 }
 

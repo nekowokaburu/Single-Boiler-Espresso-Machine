@@ -59,9 +59,11 @@ class VBM
 
         Serial.println(String(">setpointbrew:") + SETPOINT_BREW_TEMP);
         Serial.println(String(">setpointsteam:") + SETPOINT_STEAM_TEMP);
+    
+        SendParams();    
     }
 
-    void Update() const noexcept
+    void SendParams() const noexcept
     {
       const auto now = clock_->rtc_->now();
       Serial.println(String("RTCUnix: ") + now.unixtime());

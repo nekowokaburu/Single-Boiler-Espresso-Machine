@@ -60,15 +60,16 @@ class VBM
         Serial.println(String(">setpointbrew:") + SETPOINT_BREW_TEMP);
         Serial.println(String(">setpointsteam:") + SETPOINT_STEAM_TEMP);
     
-        SendParams();    
+        SendAdditionalParams();    
     }
 
-    void SendParams() const noexcept
+    void SendAdditionalParams() const noexcept
     {
       const auto now = clock_->rtc_->now();
       Serial.println(String(">RTCUnix:") + now.unixtime());
       Serial.println(String(">weekday:") + now.dayOfTheWeek());
-      Serial.println(String(">clock:") + now.year() + "/" +  now.month() + "/" + now.day() + " - " + now.hour() + ":" + now.minute() + ":" + now.second());
+      Serial.println(String("clock:") + now.year() + "/" +  now.month() + "/" + now.day() + " - " + now.hour() + ":" + now.minute() + ":" + now.second());
+      Serial.println(String(">temp:") + heater_->CurrentTemperature());
       // Serial.println(String(""));
     }
 

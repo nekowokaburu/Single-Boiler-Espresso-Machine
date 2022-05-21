@@ -23,6 +23,11 @@ class Heater final
 
     ~Heater();
 
+    double CurrentTemperature() const noexcept
+    {
+      return currentTemperature_;
+    }
+
     // Switch heater state and temperature regulation based on predefined values
     void SetHeaterTo(State HeaterState) noexcept;
 

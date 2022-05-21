@@ -7,6 +7,13 @@
 
 #include "settings.hpp"
 
+// Sun = days & 0000_0001
+// Mon = days & 0000_0010
+// Tue = days & 0000_0100
+// Wed = days & 0000_1000
+// Thu = days & 0001_0000
+// Fri = days & 0010_0000
+// Sat = days & 0100_0000
 class Clock final
 {
 public:

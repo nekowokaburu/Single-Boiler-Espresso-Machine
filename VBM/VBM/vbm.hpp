@@ -66,9 +66,9 @@ class VBM
     void SendParams() const noexcept
     {
       const auto now = clock_->rtc_->now();
-      Serial.println(String("RTCUnix: ") + now.unixtime());
-      Serial.println(String("weekday: ") + now.dayOfTheWeek());
-      Serial.println(String("clock: ") + now.month() + " - " + now.hour() + ":" + now.minute() + ":" + now.second());
+      Serial.println(String(">RTCUnix:") + now.unixtime());
+      Serial.println(String(">weekday:") + now.dayOfTheWeek());
+      Serial.println(String(">clock:") + now.year() + "/" +  now.month() + "/" + now.day() + " - " + now.hour() + ":" + now.minute() + ":" + now.second());
       // Serial.println(String(""));
     }
 

@@ -62,7 +62,9 @@ Here an example of the hot machine turned on (debugging), heating up to stream t
 <img src="Notes/PIDSettings_P0.08_I0.0001_D2.0_Window3000_veryClose.JPG" width="**">
 </p>
 
-
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=StEo4eujA3Y"><img src="https://img.youtube.com/vi/StEo4eujA3Y/0.jpg" alt="Rough function overview"></a>
+</div>
 -------------------------------------------------------------------------------------------------
 # Untested stuff
 
